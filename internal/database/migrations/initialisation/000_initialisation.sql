@@ -1,0 +1,1 @@
+CREATE DATABASE IF NOT EXISTS city_explorer_app;

@@ -1,0 +1,79 @@
+package database
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"strings"
+
+	"gorm.io/gorm"
+)
+
+var DB *gorm.DB = nil
+
+/*
+
+Plan:
+- Connect to the MYSQL Server (No Database)
+- See if the "city_explorer_app" database exists
+  - if exists -> Pass
+  - if not exists -> run initialisation
+- Reconnect WITH the "city_explorer_app" database
+- Run migrations
+
+*/
+
+func Connect(dbName string) error {
+	// Connect to MySQL Server
+	serverConnection, err := connectToServer()
+	if err != nil {
+		return err
+	}
+
+	result, err := checkDatabaseExists(serverConnection, dbName)
+	if err != nil {
+		return err
+	}
+
+	if !result {
+		initialiseDatabase(serverConnection)
+
+		err := close(serverConnection)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Connect to Database
+	DB, err = connectToDatabase(dbName)
+	if err != nil {
+		return err
+	}
+
+	migrate(DB)
+	return nil // Success!
+}
+
+func Execute(query string, args ...any) (any, error) {
+	queryUpper := strings.ToUpper(strings.TrimSpace(query))
+
+	if strings.HasPrefix(queryUpper, "SELECT") {
+		fmt.Print("This is a Select Query Execution")
+		return nil, nil
+	} else {
+		res := DB.Exec(query, args...)
+		return res.RowsAffected, res.Error
+	}
+}
+
+func initialiseDatabase(server *gorm.DB) {
+	query, err := os.ReadFile("./internal/database/migrations/initialisation/000_initialisation.sql")
+	if err != nil {
+		log.Fatal("Error Reading Migration Initialisation File: ", err)
+	}
+
+	if err := server.Exec(string(query)).Error; err != nil {
+		log.Fatal("Error Initialising Database: ", err)
+	}
+	fmt.Println("Successfully Initialised Database")
+}
