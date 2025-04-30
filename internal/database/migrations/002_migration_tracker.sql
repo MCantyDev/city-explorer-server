@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS migration_tracker (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    migration_int INT NOT NULL,
+    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO migration_tracker (migration_int) VALUES (2);

@@ -35,8 +35,10 @@ func Connect(dbName string) error {
 		return err
 	}
 
+	var firstPass bool = false
 	if !result {
-		initialiseDatabase(serverConnection)
+		initialiseDatabase(serverConnection, os.Getenv("DB_NAME"))
+		firstPass = true
 
 		err := close(serverConnection)
 		if err != nil {
@@ -50,29 +52,30 @@ func Connect(dbName string) error {
 		return err
 	}
 
-	migrate(DB)
+	migrate(DB, firstPass)
 	return nil // Success!
 }
 
-func Execute(query string, args ...any) (any, error) {
+func Execute(model any, query string, args ...any) (any, error) {
 	queryUpper := strings.ToUpper(strings.TrimSpace(query))
 
 	if strings.HasPrefix(queryUpper, "SELECT") {
-		fmt.Print("This is a Select Query Execution")
-		return nil, nil
+		result := DB.Raw(query, args...).Scan(model)
+		return model, result.Error
 	} else {
 		res := DB.Exec(query, args...)
 		return res.RowsAffected, res.Error
 	}
 }
 
-func initialiseDatabase(server *gorm.DB) {
-	query, err := os.ReadFile("./internal/database/migrations/initialisation/000_initialisation.sql")
+func initialiseDatabase(server *gorm.DB, dbName string) {
+	queryBytes, err := os.ReadFile("./internal/database/migrations/initialisation/000_initialisation.sql")
 	if err != nil {
 		log.Fatal("Error Reading Migration Initialisation File: ", err)
 	}
 
-	if err := server.Exec(string(query)).Error; err != nil {
+	query := strings.ReplaceAll(string(queryBytes), "{{SQL_DATABASE}}", dbName)
+	if err := server.Exec(query).Error; err != nil {
 		log.Fatal("Error Initialising Database: ", err)
 	}
 	fmt.Println("Successfully Initialised Database")
