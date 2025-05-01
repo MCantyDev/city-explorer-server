@@ -29,14 +29,13 @@ func SignUp(c *gin.Context) {
 	if err == nil {
 		if existingUser.Username == req.Username {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Username already exists"
+				"error": "Username already exists",
 			})
 			return
 		}
 		if existingUser.Email == req.Email {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Email already exists"
-			
+				"error": "Email already exists",
 			})
 			return
 		}
@@ -45,7 +44,9 @@ func SignUp(c *gin.Context) {
 	// Hash the Password
 	hashedPassword, err := services.HashPassword(req.Password)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to hash password"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to hash password",
+		})
 		return
 	}
 
@@ -61,14 +62,14 @@ func SignUp(c *gin.Context) {
 	_, err = database.Execute(nil, query, user.FirstName, user.LastName, user.Username, user.Email, user.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to create user"
+			"error": "Failed to create user",
 		})
 		return
 	}
 
 	// Return a success message -> Need to Change to return a valid JWT Token
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "User created successfully"
+		"message": "User created successfully",
 	})
 }
 
@@ -112,9 +113,28 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	// Generate a JWT Token
+	token, err := services.GenerateJWT(user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	// Validate the token immediately (for a Test as not connect to frontend for now)
+	claims, err := services.ValidateJWT(token)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
 	// Return a success message -> Need to change to return a Valid JWT Token
 	c.JSON(http.StatusOK, gin.H{
 		"message": fmt.Sprintf("successfully logged in to City Explorer as %s", req.Username),
+		"token":   token,
 	})
 }
 
