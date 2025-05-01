@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/MCantyDev/city-explorer-server/internal/database"
+	"github.com/MCantyDev/city-explorer-server/internal/services"
 
 	"github.com/joho/godotenv"
 )
@@ -18,6 +20,21 @@ func main() {
 
 	database.Connect(os.Getenv("DB_NAME"))
 
+	var input string = "Password"
+	hashedInput, err := services.HashPassword(input)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Unhashed Password: %s\n", input)
+	fmt.Printf("Hashed Password: %s\n", hashedInput)
+
+	fmt.Print("Comparing Unhashed to Hashed string\n")
+	isSame := services.CompareHashed(input, hashedInput)
+	if isSame {
+		fmt.Printf("Hashed and Unhashed are same")
+	} else {
+		fmt.Printf("Hashed and Unhashed are NOT the same")
+	}
 	// // Test Cases for the Database Querying
 	// query := database.NewQueryBuilder("INSERT").Table("users").Columns("username", "password").Values(2).Build()
 	// database.Execute(nil, query, "Jimbob", "saddadasdad")
