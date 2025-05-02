@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/MCantyDev/city-explorer-server/internal/handlers"
+	"github.com/MCantyDev/city-explorer-server/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,6 +15,7 @@ func SetupRoutes(router *gin.Engine) {
 
 	// Grouping
 	auth := router.Group("/auth")
+	auth.Use(middleware.JWTMiddleware())
 	{
 		auth.GET("/profile", handlers.GetProfile)
 	}

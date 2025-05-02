@@ -67,9 +67,27 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
+	query = database.NewQueryBuilder("SELECT").Table("users").Where("username = ? AND email = ?").Build()
+	_, err = database.Execute(&user, query, user.Username, user.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to retrieve user information after creation",
+		})
+	}
+
+	// Generate a JWT Token
+	token, err := services.GenerateJWT(user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err,
+		})
+		return
+	}
+
 	// Return a success message -> Need to Change to return a valid JWT Token
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "User created successfully",
+		"message": fmt.Sprintf("User (%s) created successfully", user.Username),
+		"token":   token,
 	})
 }
 
@@ -122,15 +140,6 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Validate the token immediately (for a Test as not connect to frontend for now)
-	claims, err := services.ValidateJWT(token)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
 	// Return a success message -> Need to change to return a Valid JWT Token
 	c.JSON(http.StatusOK, gin.H{
 		"message": fmt.Sprintf("successfully logged in to City Explorer as %s", req.Username),
@@ -139,8 +148,29 @@ func Login(c *gin.Context) {
 }
 
 func GetProfile(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "User ID missing in context",
+		})
+	}
+
+	var user models.User
+	query := database.NewQueryBuilder("SELECT").Table("users").Columns("first_name", "last_name", "username", "email").Where("id = ?").Build()
+
+	_, err := database.Execute(&user, query, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to retreive User data from Server",
+		})
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"user": "MarkC",
-		"role": "admin",
+		"user": gin.H{
+			"firstName": user.FirstName,
+			"lastName":  user.LastName,
+			"username":  user.Username,
+			"email":     user.Email,
+		},
 	})
 }

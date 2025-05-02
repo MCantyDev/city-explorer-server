@@ -34,9 +34,9 @@ func InitJWT() error {
 func GenerateJWT(user models.User) (string, error) {
 	// Claims -> Variables OF the JWT Token
 	claims := jwt.MapClaims{
-		"id":       user.ID,
-		"username": user.Username,
-		"exp":      time.Now().Add(time.Hour * (24 * time.Duration(jwtDurationInDays))).Unix(),
+		"id":   user.ID,
+		"role": 1, // Temp Value
+		"exp":  time.Now().Add(time.Hour * (24 * time.Duration(jwtDurationInDays))).Unix(),
 	}
 
 	// Test Cases for Time
