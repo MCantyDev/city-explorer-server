@@ -2,33 +2,12 @@ package services
 
 import (
 	"fmt"
-	"os"
-	"strconv"
 	"time"
 
+	"github.com/MCantyDev/city-explorer-server/internal/config"
 	"github.com/MCantyDev/city-explorer-server/internal/models"
 	"github.com/golang-jwt/jwt"
 )
-
-var jwtSecretKey []byte
-var jwtDurationInDays int
-
-// Initialisation for JWT (ran in main.go during Server setup)
-func InitJWT() error {
-	// Initialise the JWT secret key from environment variables
-	jwtSecretKey = []byte(os.Getenv("JWT_SECRET_KEY"))
-	if len(jwtSecretKey) == 0 {
-		return fmt.Errorf("ensure \"JWT_SECRET_KEY\n is set in .env file")
-	}
-	// Initialise the JWT duration (in days) from the environment variables
-	var err error
-	jwtDurationInDays, err = strconv.Atoi(os.Getenv("JWT_DURATION_DAYS"))
-	if err != nil || jwtDurationInDays <= 0 || jwtDurationInDays > 31 {
-		return fmt.Errorf("ensure \"JWT_DURATION_DAYS\" is set in .env file and is a positive integer (1 - 31)")
-	}
-
-	return nil
-}
 
 // Generate JWT - Creates a new JWT Token with user info and expiration date (set with Environment Variable)
 func GenerateJWT(user models.User) (string, error) {
@@ -36,7 +15,7 @@ func GenerateJWT(user models.User) (string, error) {
 	claims := jwt.MapClaims{
 		"id":   user.ID,
 		"role": 1, // Temp Value
-		"exp":  time.Now().Add(time.Hour * (24 * time.Duration(jwtDurationInDays))).Unix(),
+		"exp":  time.Now().Add(time.Hour).Unix(),
 	}
 
 	// Test Cases for Time
@@ -47,7 +26,7 @@ func GenerateJWT(user models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// Sign the Token with the Secret Key
-	signedToken, err := token.SignedString(jwtSecretKey)
+	signedToken, err := token.SignedString(config.Cfg.JWT.SecretKey)
 	if err != nil {
 		return "", err
 	}
@@ -61,7 +40,7 @@ func ValidateJWT(tokenStr string) (jwt.MapClaims, error) {
 		if !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return jwtSecretKey, nil
+		return config.Cfg.JWT.SecretKey, nil
 	})
 	if err != nil {
 		return nil, err

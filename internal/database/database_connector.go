@@ -3,8 +3,8 @@ package database
 import (
 	"errors"
 	"fmt"
-	"os"
 
+	"github.com/MCantyDev/city-explorer-server/internal/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -21,11 +21,11 @@ Purpose of Database Connector
 
 // connectToServer - establishes a connection to the MySQL server (Without selecting a DB) -> Allows a Database check to be ran to see if we need to initialise Database
 func connectToServer() (*gorm.DB, error) {
-	dsnWithoutDB := fmt.Sprintf("%s:%s@tcp(%s:%s)/?charset=utf8mb4&parseTime=true&loc=Local",
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
+	dsnWithoutDB := fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8mb4&parseTime=true&loc=Local",
+		config.Cfg.Database.User,
+		config.Cfg.Database.Password,
+		config.Cfg.Database.Host,
+		config.Cfg.Database.Port,
 	)
 	conn, err := gorm.Open(mysql.Open(dsnWithoutDB), &gorm.Config{})
 
@@ -37,11 +37,11 @@ func connectToServer() (*gorm.DB, error) {
 
 // connectToDatabase - Establishes a connection to the MySQL Database
 func connectToDatabase(dbName string) (*gorm.DB, error) {
-	dsnWithDB := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=true&loc=Local",
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
+	dsnWithDB := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=true&loc=Local",
+		config.Cfg.Database.User,
+		config.Cfg.Database.Password,
+		config.Cfg.Database.Host,
+		config.Cfg.Database.Port,
 		dbName,
 	)
 

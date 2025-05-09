@@ -18,5 +18,7 @@ func SetupRoutes(router *gin.Engine) {
 	auth.Use(middleware.JWTMiddleware())
 	{
 		auth.GET("/profile", handlers.GetProfile)
+		auth.GET("/get-city", handlers.GetCity)
+		auth.GET("/get-country", handlers.GetCountry)
 	}
 }

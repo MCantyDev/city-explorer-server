@@ -37,7 +37,7 @@ func Connect(dbName string) error {
 
 	var firstPass bool = false
 	if !result {
-		initialiseDatabase(serverConnection, os.Getenv("DB_NAME"))
+		initialiseDatabase(serverConnection, dbName)
 		firstPass = true
 
 		err := close(serverConnection)

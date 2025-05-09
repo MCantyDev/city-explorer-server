@@ -79,7 +79,7 @@ func SignUp(c *gin.Context) {
 	token, err := services.GenerateJWT(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
+			"error": err.Error(),
 		})
 		return
 	}
@@ -135,7 +135,7 @@ func Login(c *gin.Context) {
 	token, err := services.GenerateJWT(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
+			"error": err.Error(),
 		})
 		return
 	}
