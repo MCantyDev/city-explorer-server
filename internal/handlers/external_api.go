@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetCity(c *gin.Context) {
+func GetCities(c *gin.Context) {
 	city := c.Query("city")
 
 	// Ensure City was set in the Get Request
@@ -28,10 +28,10 @@ func GetCity(c *gin.Context) {
 	encodedCity := url.QueryEscape(city)
 
 	// Get the URL Template for Photon API
-	url := fmt.Sprintf(config.Cfg.PhotonAPI.URL+"?q=%s", encodedCity)
+	url := fmt.Sprintf(config.Cfg.PhotonAPI.URL, encodedCity)
 	if url == "" || !strings.HasPrefix(url, "https://") {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "'PHOTON_URL' is not properly setup",
+			"error": "'" + config.Cfg.PhotonAPI.Name + "' URL is not properly setup",
 		})
 		return
 	}
@@ -39,7 +39,7 @@ func GetCity(c *gin.Context) {
 	// Use City to Call External API
 	data, err := services.FetchExternalAPI(url)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
@@ -50,7 +50,7 @@ func GetCity(c *gin.Context) {
 	err = json.Unmarshal(data, &externalData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
+			"error": err.Error(),
 		})
 		return
 	}
@@ -70,10 +70,10 @@ func GetCountry(c *gin.Context) {
 	}
 
 	// Get the URL Template for Photon API
-	url := fmt.Sprintf(config.Cfg.RestCountriesAPI.URL+"%s", countryCode)
+	url := fmt.Sprintf(config.Cfg.RestCountriesAPI.URL, countryCode)
 	if url == "" || !strings.HasPrefix(url, "https://") {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "'REST_COUNTRIES_URL' is not properly setup",
+			"error": "'" + config.Cfg.RestCountriesAPI.Name + "' URL is not properly setup",
 		})
 		return
 	}
@@ -81,8 +81,8 @@ func GetCountry(c *gin.Context) {
 	// Use Country Code to Call External API
 	data, err := services.FetchExternalAPI(url)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("No Results found with country code - %s", countryCode),
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
 		})
 		return
 	}
@@ -92,7 +92,7 @@ func GetCountry(c *gin.Context) {
 	err = json.Unmarshal(data, &externalData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
+			"error": err.Error(),
 		})
 		return
 	}
@@ -102,7 +102,101 @@ func GetCountry(c *gin.Context) {
 
 // Weather and Such
 func GetWeather(c *gin.Context) {
+	lat := c.Query("lat")
+	long := c.Query("long")
+
+	// Ensure Lat and Long are set in the Get Request
+	if lat == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing 'lat' query parameter",
+		})
+		return
+	}
+	if long == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing 'long' query parameter",
+		})
+		return
+	}
+
+	// Build URL String for OpenWeatherAPI
+	url := fmt.Sprintf(config.Cfg.OpenWeatherAPI.URL, lat, long, config.Cfg.OpenWeatherAPI.Key)
+	fmt.Println(url)
+	if url == "" || !strings.HasPrefix(url, "https://") {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "'" + config.Cfg.OpenWeatherAPI.Name + "' URL is not setup properly",
+		})
+		return
+	}
+
+	// Fetch Data from API
+	data, err := services.FetchExternalAPI(url)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Unmarshal the Data into a usable form
+	var externalData models.OpenWeatherRequest
+	err = json.Unmarshal(data, &externalData)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, externalData)
 }
 
 func GetTravelDestinations(c *gin.Context) {
+	lat := c.Query("lat")
+	long := c.Query("long")
+
+	// Ensure Lat and Long are set in the Get Request
+	if lat == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing 'lat' query parameter",
+		})
+		return
+	}
+	if long == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing 'long' query parameter",
+		})
+		return
+	}
+
+	// Build URL String for OpenWeatherAPI
+	url := fmt.Sprintf(config.Cfg.OpenTripAPI.URL, lat, long, config.Cfg.OpenTripAPI.Key)
+	fmt.Println(url)
+	if url == "" || !strings.HasPrefix(url, "https://") {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "'" + config.Cfg.OpenTripAPI.Name + "' URL is not setup properly",
+		})
+		return
+	}
+
+	// Fetch Data from API
+	data, err := services.FetchExternalAPI(url)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Unmarshal the Data into a usable form
+	var externalData models.OpenTripRequest
+	err = json.Unmarshal(data, &externalData)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, externalData)
 }

@@ -89,20 +89,20 @@ func Load() {
 
 	Cfg.PhotonAPI = ExternalAPI{
 		Name: "Photon API",
-		URL:  "https://photon.komoot.io/api/", // Static URL
+		URL:  "https://photon.komoot.io/api/?q=%s", // Static URL
 	}
 	Cfg.RestCountriesAPI = ExternalAPI{
 		Name: "Rest-Countries API",
-		URL:  "https://restcountries.com/v3.1/alpha/", // Static URL
+		URL:  "https://restcountries.com/v3.1/alpha/%s", // Static URL
 	}
 	Cfg.OpenWeatherAPI = SecureExternalAPI{
 		Name: "OpenWeather API",
-		URL:  "https://api.openweathermap.org/data/2.5", // Static URL
+		URL:  "https://api.openweathermap.org/data/3.0/onecall?lat=%s&lon=%s&exclude=current,minutely,alerts&appid=%s", // Static URL
 		Key:  getEnv("OPENWEATHER_KEY"),
 	}
 	Cfg.OpenTripAPI = SecureExternalAPI{
 		Name: "OpenTrip API",
-		URL:  "https://api.opentripmap.com/0.1/en/places", // Static URL
+		URL:  "https://api.opentripmap.com/0.1/en/places/radius?lat=%s&lon=%s&radius=5000&limit=50&apikey=%s", // Static URL
 		Key:  getEnv("OPENTRIP_KEY"),
 	}
 }
