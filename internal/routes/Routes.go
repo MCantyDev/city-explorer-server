@@ -26,5 +26,6 @@ func SetupRoutes(router *gin.Engine) {
 		// City Specific Endpoints
 		auth.GET("/get-city-weather", handlers.GetWeather)           // OpenWeatherMap API
 		auth.GET("/get-city-sights", handlers.GetTravelDestinations) // OpenTripMap API
+		auth.GET("/get-city-poi", handlers.GetTravelDestination)
 	}
 }

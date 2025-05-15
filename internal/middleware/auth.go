@@ -42,17 +42,17 @@ func JWTMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		role, ok := claims["role"]
+		isAdmin, ok := claims["isAdmin"]
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"error": "Failed to extract Role from token claims",
+				"error": "Failed to extract information from token claims",
 			})
 			return
 		}
 
 		// Setting the ID in the current request context -> Will allow me to return proper data using a select statement
 		c.Set("userID", id)
-		c.Set("role", role)
+		c.Set("role", isAdmin)
 		c.Next()
 	}
 }

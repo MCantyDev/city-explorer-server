@@ -39,7 +39,7 @@ func GetCities(c *gin.Context) {
 	// Use City to Call External API
 	data, err := services.FetchExternalAPI(url)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
 		return
@@ -190,6 +190,49 @@ func GetTravelDestinations(c *gin.Context) {
 
 	// Unmarshal the Data into a usable form
 	var externalData models.OpenTripRequest
+	err = json.Unmarshal(data, &externalData)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, externalData)
+}
+
+func GetTravelDestination(c *gin.Context) {
+	xid := c.Query("xid")
+
+	// Ensure Lat and Long are set in the Get Request
+	if xid == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing 'xid' query parameter",
+		})
+		return
+	}
+
+	// Build URL String for OpenWeatherAPI
+	url := fmt.Sprintf(config.Cfg.OpenTripXIDAPI.URL, xid, config.Cfg.OpenTripAPI.Key)
+	fmt.Println(url)
+	if url == "" || !strings.HasPrefix(url, "https://") {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "'" + config.Cfg.OpenTripXIDAPI.Name + "' URL is not setup properly",
+		})
+		return
+	}
+
+	// Fetch Data from API
+	data, err := services.FetchExternalAPI(url)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Unmarshal the Data into a usable form
+	var externalData models.OpenTripPlaceRequest
 	err = json.Unmarshal(data, &externalData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

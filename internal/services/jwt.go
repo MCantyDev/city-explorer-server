@@ -13,9 +13,10 @@ import (
 func GenerateJWT(user models.User) (string, error) {
 	// Claims -> Variables OF the JWT Token
 	claims := jwt.MapClaims{
-		"id":   user.ID,
-		"role": 1, // Temp Value
-		"exp":  time.Now().Add(time.Hour).Unix(),
+		"username": user.Username,
+		"id":       user.ID,
+		"isAdmin":  false, // Temp Value -> Changed to Boolean
+		"exp":      time.Now().Add(time.Hour).Unix(),
 	}
 
 	// Test Cases for Time
@@ -33,6 +34,7 @@ func GenerateJWT(user models.User) (string, error) {
 	return signedToken, nil
 }
 
+// Validate JWT - Validates if the JWT token is valid or not
 func ValidateJWT(tokenStr string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		// Ensure the signing method is expected
@@ -42,6 +44,7 @@ func ValidateJWT(tokenStr string) (jwt.MapClaims, error) {
 		}
 		return config.Cfg.JWT.SecretKey, nil
 	})
+
 	if err != nil {
 		return nil, err
 	}

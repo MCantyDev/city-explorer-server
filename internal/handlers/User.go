@@ -14,11 +14,13 @@ import (
 func SignUp(c *gin.Context) {
 	var req models.SignupRequest
 
+	// initialise an Error Values
+	userCreationError := models.NewUserCreationError()
+
 	// Bind incoming JSON request to the SignupRequest struct
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		userCreationError.Error = "Internal Server Error (Try again later)"
+		c.JSON(http.StatusInternalServerError, userCreationError)
 		return
 	}
 
@@ -28,25 +30,51 @@ func SignUp(c *gin.Context) {
 	_, err := database.Execute(&existingUser, query, req.Username, req.Email)
 	if err == nil {
 		if existingUser.Username == req.Username {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Username already exists",
-			})
+			userCreationError.Error = "Username Already Taken"
+			c.JSON(http.StatusBadRequest, userCreationError)
 			return
 		}
 		if existingUser.Email == req.Email {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Email already exists",
-			})
+			userCreationError.Error = "Email Already Taken"
+			c.JSON(http.StatusBadRequest, userCreationError)
 			return
 		}
+	}
+
+	// Validate the Inputs based on the user creation requirements (see models request_errors.go)
+	// Cool way of doing it, creating a slice of structs that take in a value and a function(string) (string, bool)
+	// Giving it 3 different pairs
+	validations := []struct {
+		value    string
+		validate func(string) (string, bool)
+	}{
+		{req.FirstName, services.ValidateFirstName},
+		{req.LastName, services.ValidateLastName},
+		{req.Password, services.ValidatePassword},
+	}
+
+	// Then Loop through the validations
+	for _, v := range validations {
+		errMsg, valid := v.validate(v.value)
+		if !valid {
+			userCreationError.Error = errMsg
+			c.JSON(http.StatusBadRequest, userCreationError)
+			return
+		}
+	}
+
+	// Check if Passwords are the same
+	if req.Password != req.ConfirmPassword {
+		userCreationError.Error = "Passwords Don't Match"
+		c.JSON(http.StatusBadRequest, userCreationError)
+		return
 	}
 
 	// Hash the Password
 	hashedPassword, err := services.HashPassword(req.Password)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Failed to hash password",
-		})
+		userCreationError.Error = "Internal Server Error (Try again later)"
+		c.JSON(http.StatusInternalServerError, userCreationError)
 		return
 	}
 
@@ -61,26 +89,24 @@ func SignUp(c *gin.Context) {
 	query = database.NewQueryBuilder("INSERT").Table("users").Columns("first_name", "last_name", "username", "email", "password").Values(5).Build()
 	_, err = database.Execute(nil, query, user.FirstName, user.LastName, user.Username, user.Email, user.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to create user",
-		})
+		userCreationError.Error = "Internal Server Error (Try again later)"
+		c.JSON(http.StatusInternalServerError, userCreationError)
 		return
 	}
 
 	query = database.NewQueryBuilder("SELECT").Table("users").Where("username = ? AND email = ?").Build()
 	_, err = database.Execute(&user, query, user.Username, user.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to retrieve user information after creation",
-		})
+		userCreationError.Error = "Internal Server Error (Try again later)"
+		c.JSON(http.StatusInternalServerError, userCreationError)
+		return
 	}
 
 	// Generate a JWT Token
 	token, err := services.GenerateJWT(user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		userCreationError.Error = "Internal Server Error (Try again later)"
+		c.JSON(http.StatusInternalServerError, userCreationError)
 		return
 	}
 
@@ -94,12 +120,16 @@ func SignUp(c *gin.Context) {
 func Login(c *gin.Context) {
 	var req models.LoginRequest
 
+	// initialise an Error Values
+	userLoginError := models.UserLoginError{
+		Error: "",
+	}
+
 	// Bind incoming JSON request to the LoginRequest struct
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		userLoginError.Error = "Internal Server Error (Try again later)"
+		c.JSON(http.StatusInternalServerError, userLoginError)
 		return
 	}
 
@@ -108,35 +138,31 @@ func Login(c *gin.Context) {
 	query := database.NewQueryBuilder("SELECT").Table("users").Where("username = ?").Build()
 	_, err = database.Execute(&user, query, req.Username)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to query database",
-		})
+		userLoginError.Error = "Internal Server Error (Try again later)"
+		c.JSON(http.StatusInternalServerError, userLoginError)
 		return
 	}
 
 	// If no user is found
 	if user.Username == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "User does not exists",
-		})
+		userLoginError.Error = fmt.Sprintf("No User found with Username: %s", req.Username)
+		c.JSON(http.StatusBadRequest, userLoginError)
 		return
 	}
 
 	// Compare the Provided password with the stored hashed password
 	isPassword := services.CompareHashed(user.Password, req.Password)
 	if !isPassword {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Password does not match",
-		})
+		userLoginError.Error = fmt.Sprintf("Passwords do not match")
+		c.JSON(http.StatusBadRequest, userLoginError)
 		return
 	}
 
 	// Generate a JWT Token
 	token, err := services.GenerateJWT(user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		userLoginError.Error = "Internal Server Error (Try again later)"
+		c.JSON(http.StatusInternalServerError, userLoginError)
 		return
 	}
 

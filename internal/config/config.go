@@ -25,6 +25,7 @@ type Config struct {
 	RestCountriesAPI ExternalAPI
 	OpenWeatherAPI   SecureExternalAPI
 	OpenTripAPI      SecureExternalAPI
+	OpenTripXIDAPI   SecureExternalAPI
 }
 
 type DatabaseConfig struct {
@@ -89,7 +90,7 @@ func Load() {
 
 	Cfg.PhotonAPI = ExternalAPI{
 		Name: "Photon API",
-		URL:  "https://photon.komoot.io/api/?q=%s", // Static URL
+		URL:  "https://photon.komoot.io/api/?q=%s&osm_tag=place:city&osm_tag=place:municipality&osm_tag=place:town&limit=50", // Static URL
 	}
 	Cfg.RestCountriesAPI = ExternalAPI{
 		Name: "Rest-Countries API",
@@ -97,12 +98,17 @@ func Load() {
 	}
 	Cfg.OpenWeatherAPI = SecureExternalAPI{
 		Name: "OpenWeather API",
-		URL:  "https://api.openweathermap.org/data/3.0/onecall?lat=%s&lon=%s&exclude=current,minutely,alerts&appid=%s", // Static URL
+		URL:  "https://api.openweathermap.org/data/3.0/onecall?lat=%s&lon=%s&exclude=alerts,hourly,minutely&units=metric&appid=%s", // Static URL
 		Key:  getEnv("OPENWEATHER_KEY"),
 	}
 	Cfg.OpenTripAPI = SecureExternalAPI{
 		Name: "OpenTrip API",
-		URL:  "https://api.opentripmap.com/0.1/en/places/radius?lat=%s&lon=%s&radius=5000&limit=50&apikey=%s", // Static URL
+		URL:  "https://api.opentripmap.com/0.1/en/places/radius?lat=%s&lon=%s&radius=2000&limit=50&kinds=amusements,accomodations,tourist_facilities&rate=2&apikey=%s", // Static URL
+		Key:  getEnv("OPENTRIP_KEY"),
+	}
+	Cfg.OpenTripXIDAPI = SecureExternalAPI{
+		Name: "OpenTrip Singular Place API",
+		URL:  "https://api.opentripmap.com/0.1/en/places/xid/%s?apikey=%s",
 		Key:  getEnv("OPENTRIP_KEY"),
 	}
 }
