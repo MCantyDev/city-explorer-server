@@ -59,10 +59,16 @@ func Connect(dbName string) error {
 func Execute(model any, query string, args ...any) (any, error) {
 	queryUpper := strings.ToUpper(strings.TrimSpace(query))
 
-	if strings.HasPrefix(queryUpper, "SELECT") {
+	switch {
+	case strings.HasPrefix(queryUpper, "SELECT"):
 		result := DB.Raw(query, args...).Scan(model)
 		return model, result.Error
-	} else {
+
+	case strings.HasPrefix(queryUpper, "INSERT") && model != nil:
+		err := DB.Create(model).Error
+		return model, err
+
+	default:
 		res := DB.Exec(query, args...)
 		return res.RowsAffected, res.Error
 	}

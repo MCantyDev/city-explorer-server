@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"gorm.io/gorm"
 )
@@ -61,6 +62,7 @@ func migrate(database *gorm.DB, firstPass bool) error {
 			if err != nil {
 				return err
 			}
+
 			highestMigration = number
 		}
 	}
@@ -125,11 +127,68 @@ func readMigrationFile(file os.DirEntry, migrationsPath string) (string, error) 
 	return "", fmt.Errorf("failed to read migration file '%s': 'Must end with .sql'", file.Name())
 }
 
+// Rebuilt to be more robust and function with the newly added Triggers (Pain in the ass)
 func splitMigrationQueries(queryString string) []string {
-	queries := strings.Split(queryString, ";")
+	var queries []string
+	var currentQuery strings.Builder
+	var prevCh rune
 
-	for i := range queries {
-		queries[i] = strings.TrimSpace(queries[i])
+	inSingleQuote := false
+	inDoubleQuote := false
+	inLineComment := false
+	inBlockComment := false
+	beginEndDepth := 0
+
+	var window []rune // Sliding window for detecting ' begin ' and ' end '
+
+	for _, ch := range queryString {
+		// Handle quotes
+		if !inDoubleQuote && !inLineComment && !inBlockComment && ch == '\'' {
+			inSingleQuote = !inSingleQuote
+		} else if !inSingleQuote && !inLineComment && !inBlockComment && ch == '"' {
+			inDoubleQuote = !inDoubleQuote
+		}
+		// Handle line comments (--) -> Cannot be Flipped like quotes as '' and "" are repeatable to end them...while ---- does not end the line comment
+		if !inSingleQuote && !inDoubleQuote && !inBlockComment && prevCh == '-' && ch == '-' {
+			inLineComment = true
+		}
+		if inLineComment && ch == '\n' {
+			inLineComment = false
+		}
+		// Handle block comments (/* */) -> Similarly Block comments need a /* and */ doing /* /* or */ */ does not start and end comment
+		if !inSingleQuote && !inDoubleQuote && !inLineComment && prevCh == '/' && ch == '*' {
+			inBlockComment = true
+		}
+		if inBlockComment && prevCh == '*' && ch == '/' {
+			inBlockComment = false
+		}
+
+		// Sliding Window
+		window = append(window, unicode.ToLower(ch)) // Add rune to window
+		if len(window) > 5 {                         // if window is 5 chars long
+			window = window[1:] // remove the first index (by slicing from the second index)
+		}
+		windowStr := string(window) // Convert to string
+
+		// Detect BEGIN / END depth changes
+		if !inSingleQuote && !inDoubleQuote && !inLineComment && !inBlockComment {
+			if windowStr == "begin" {
+				beginEndDepth++
+			} else if beginEndDepth > 0 && windowStr == "end" {
+				beginEndDepth--
+			}
+		}
+
+		// Add current character to builder
+		currentQuery.WriteRune(ch)
+
+		// Split Statement if ; is found outside all checks
+		if !inSingleQuote && !inDoubleQuote && !inLineComment && !inBlockComment && beginEndDepth == 0 && ch == ';' {
+			queries = append(queries, strings.TrimSpace(currentQuery.String()))
+			currentQuery.Reset()
+		}
+
+		prevCh = ch
 	}
 
 	return queries

@@ -27,5 +27,37 @@ func SetupRoutes(router *gin.Engine) {
 		auth.GET("/get-city-weather", handlers.GetWeather)           // OpenWeatherMap API
 		auth.GET("/get-city-sights", handlers.GetTravelDestinations) // OpenTripMap API
 		auth.GET("/get-city-poi", handlers.GetTravelDestination)
+
+		// Check Admin Status (Here as any user can technically check status)
+		auth.GET("/check-admin-status", handlers.CheckAdminStatus)
+	}
+
+	// Admin group
+	admin := router.Group("/admin")
+	admin.Use(middleware.AdminMiddleware())
+	{
+		// Get Table Data
+		admin.GET("/get-users", handlers.GetUsers)
+		admin.GET("/get-countries", handlers.GetCountries)
+		admin.GET("/get-city-weather", handlers.GetCityWeatherTable)
+		admin.GET("/get-city-sights", handlers.GetCitySightsTable)
+		admin.GET("/get-city-pois", handlers.GetCityPoisTable)
+
+		// Edit Users (Only Selectable Editable Data - The rest just Query the external APIs again)
+		admin.POST("/add-user", handlers.AddUser)
+		admin.POST("/edit-user", handlers.EditUser)
+		admin.POST("/delete-user", handlers.DeleteUser)
+
+		// Refresh (Using GET because...why not)
+		admin.GET("/refresh-country", handlers.RefreshCountry)
+		admin.GET("/refresh-city-weather", handlers.RefreshCityWeather)
+		admin.GET("/refresh-city-sights", handlers.RefreshCitySights)
+		admin.GET("/refresh-city-poi", handlers.RefreshCityPoi)
+
+		// Delete
+		admin.POST("/delete-country", handlers.DeleteCountry)
+		admin.POST("/delete-city-weather", handlers.DeleteCityWeather)
+		admin.POST("/delete-city-sights", handlers.DeleteCitySights)
+		admin.POST("/delete-city-poi", handlers.DeleteCityPoi)
 	}
 }

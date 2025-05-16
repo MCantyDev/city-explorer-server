@@ -90,7 +90,7 @@ func Load() {
 
 	Cfg.PhotonAPI = ExternalAPI{
 		Name: "Photon API",
-		URL:  "https://photon.komoot.io/api/?q=%s&osm_tag=place:city&osm_tag=place:municipality&osm_tag=place:town&limit=50", // Static URL
+		URL:  "https://photon.komoot.io/api/?q=%s&lang=en", // Static URL
 	}
 	Cfg.RestCountriesAPI = ExternalAPI{
 		Name: "Rest-Countries API",

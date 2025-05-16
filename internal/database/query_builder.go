@@ -8,11 +8,14 @@ import (
 type QueryBuilder struct {
 	operation string // SELECT, INSERT, UPDATE, DELETE
 
-	table     string   // TABLE
-	columns   []string // COLUMNS
+	table   string   // TABLE
+	columns []string // COLUMNS
+
 	numValues int      // NUMBER OF VALUES (e.g. VALUES (?, ?, ?))
+	rawValues []string // For Subqueries in INSERT statements
 
 	whereClauses []string
+	joinClauses  []string
 }
 
 func NewQueryBuilder(operation string) *QueryBuilder {
@@ -39,6 +42,16 @@ func (qb *QueryBuilder) Where(condition string) *QueryBuilder {
 	return qb
 }
 
+func (qb *QueryBuilder) Join(joinClause string) *QueryBuilder {
+	qb.joinClauses = append(qb.joinClauses, joinClause)
+	return qb
+}
+
+func (qb *QueryBuilder) ValuesRaw(raw ...string) *QueryBuilder {
+	qb.rawValues = raw
+	return qb
+}
+
 func (qb *QueryBuilder) Build() string {
 	var query string
 
@@ -49,14 +62,24 @@ func (qb *QueryBuilder) Build() string {
 			cols = strings.Join(qb.columns, ", ")
 		}
 		query = fmt.Sprintf("SELECT %s FROM %s", cols, qb.table)
+		if len(qb.joinClauses) > 0 {
+			query += " " + strings.Join(qb.joinClauses, " ")
+		}
 		if len(qb.whereClauses) > 0 {
 			query += " WHERE " + strings.Join(qb.whereClauses, " AND ")
 		}
 
 	case "INSERT":
 		cols := strings.Join(qb.columns, ", ")
-		placeholders := strings.Repeat("?, ", qb.numValues)
-		placeholders = strings.TrimSuffix(placeholders, ", ")
+
+		var placeholders string
+		if len(qb.rawValues) > 0 {
+			placeholders = strings.Join(qb.rawValues, ", ")
+		} else {
+			placeholders = strings.Repeat("?, ", qb.numValues)
+			placeholders = strings.TrimSuffix(placeholders, ", ")
+		}
+
 		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", qb.table, cols, placeholders)
 
 	case "UPDATE":

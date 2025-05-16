@@ -86,8 +86,8 @@ func SignUp(c *gin.Context) {
 		Email:     req.Email,
 		Password:  hashedPassword,
 	}
-	query = database.NewQueryBuilder("INSERT").Table("users").Columns("first_name", "last_name", "username", "email", "password").Values(5).Build()
-	_, err = database.Execute(nil, query, user.FirstName, user.LastName, user.Username, user.Email, user.Password)
+	query = database.NewQueryBuilder("INSERT").Table("users").Columns("first_name", "last_name", "username", "email", "password", "is_admin").Values(6).Build()
+	_, err = database.Execute(nil, query, user.FirstName, user.LastName, user.Username, user.Email, user.Password, false)
 	if err != nil {
 		userCreationError.Error = "Internal Server Error (Try again later)"
 		c.JSON(http.StatusInternalServerError, userCreationError)
@@ -153,7 +153,7 @@ func Login(c *gin.Context) {
 	// Compare the Provided password with the stored hashed password
 	isPassword := services.CompareHashed(user.Password, req.Password)
 	if !isPassword {
-		userLoginError.Error = fmt.Sprintf("Passwords do not match")
+		userLoginError.Error = "Passwords do not match"
 		c.JSON(http.StatusBadRequest, userLoginError)
 		return
 	}

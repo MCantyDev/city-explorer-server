@@ -21,7 +21,7 @@ func main() {
 	}
 
 	// Setup Gin Server Router
-	// gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{

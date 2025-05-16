@@ -8,27 +8,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// JWT Middleware -> Validates the Authorisation Token sent within the Request in the "Authorization" header (Standardised naming convention thus using "z")
-func JWTMiddleware() gin.HandlerFunc {
+func AdminMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Getting the Value within the Authorization header
 		tokenString := c.GetHeader("Authorization")
-		// Checking IF token string has a value and leads with "Bearer "
 		if tokenString == "" || !strings.HasPrefix(tokenString, "Bearer ") {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "Missing or invalid token",
 			})
 			return
 		}
-
-		// Trimming away the "Bearer " prefix to be left with only the token string
 		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
-		// Validating the JWT Token using authorisation service function
 		claims, err := services.ValidateJWT(tokenString)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid token",
+			})
+			return
+		}
+
+		// Admin Specific Check
+		status, _ := services.CheckAdminStatus(claims["id"].(float64))
+		if !status {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "Admin access required",
 			})
 			return
 		}

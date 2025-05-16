@@ -14,8 +14,8 @@ func GenerateJWT(user models.User) (string, error) {
 	// Claims -> Variables OF the JWT Token
 	claims := jwt.MapClaims{
 		"username": user.Username,
-		"id":       user.ID,
-		"isAdmin":  false, // Temp Value -> Changed to Boolean
+		"id":       user.Id,
+		"isAdmin":  user.IsAdmin,
 		"exp":      time.Now().Add(time.Hour).Unix(),
 	}
 
