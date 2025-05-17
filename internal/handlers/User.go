@@ -102,18 +102,19 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
-	// Generate a JWT Token
-	token, err := services.GenerateJWT(user)
+	// Generate Cookies
+	path := "/sign-up"
+	err = services.GenerateCookies(c, user.Id, path)
 	if err != nil {
-		userCreationError.Error = "Internal Server Error (Try again later)"
-		c.JSON(http.StatusInternalServerError, userCreationError)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
 
 	// Return a success message -> Need to Change to return a valid JWT Token
 	c.JSON(http.StatusCreated, gin.H{
 		"message": fmt.Sprintf("User (%s) created successfully", user.Username),
-		"token":   token,
 	})
 }
 
@@ -158,23 +159,24 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Generate a JWT Token
-	token, err := services.GenerateJWT(user)
+	// Generate Cookies
+	path := "/"
+	err = services.GenerateCookies(c, user.Id, path)
 	if err != nil {
-		userLoginError.Error = "Internal Server Error (Try again later)"
-		c.JSON(http.StatusInternalServerError, userLoginError)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
 
 	// Return a success message -> Need to change to return a Valid JWT Token
 	c.JSON(http.StatusOK, gin.H{
 		"message": fmt.Sprintf("successfully logged in to City Explorer as %s", req.Username),
-		"token":   token,
 	})
 }
 
 func GetProfile(c *gin.Context) {
-	userID, exists := c.Get("userID")
+	userID, exists := c.Get("userId")
 	if !exists {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "User ID missing in context",

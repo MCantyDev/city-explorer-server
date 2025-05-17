@@ -36,7 +36,7 @@ func GetCountry(code string) (*models.Country, error) {
 }
 
 // Interfaces are weird...so it made userId a float64...so i rolled with it...
-func CheckAdminStatus(userId float64) (bool, error) {
+func CheckAdminStatus(userId uint) (bool, error) {
 	var user models.User
 
 	query := database.NewQueryBuilder("SELECT").Table("users").Where("id = ?").Build()

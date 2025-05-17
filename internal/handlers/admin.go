@@ -20,27 +20,24 @@ import (
 // See all data in the Server in the Frontend Admin Dashboard
 
 func CheckAdminStatus(c *gin.Context) {
-	userId, exists := c.Get("userID")
+	isAdmin, exists := c.Get("isAdmin")
 	if !exists {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Could not validate admin status",
-			"isAdmin": false,
+			"error":   "isAdmin not found in context",
+			"isAdmin": isAdmin,
 		})
 		return
 	}
-
-	isAdmin, _ := services.CheckAdminStatus(userId.(float64))
-	if !isAdmin {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error":   "Unauthorised",
-			"isAdmin": false,
+	if !isAdmin.(bool) {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "Admin status required",
+			"isAdmin": isAdmin,
 		})
-		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"error":   nil,
-		"isAdmin": true,
+		"isAdmin": isAdmin,
 	})
 }
 

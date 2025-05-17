@@ -156,8 +156,9 @@ func GetWeather(c *gin.Context) {
 	country := c.Query("country-code")
 	if city == "" || country == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Missing 'city' or 'country' query parameter",
+			"error": "Missing 'city' or 'country-code' query parameter",
 		})
+		return
 	}
 
 	// Try to retrieve data from the database

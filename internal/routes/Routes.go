@@ -11,11 +11,11 @@ func SetupRoutes(router *gin.Engine) {
 
 	// User Routes
 	router.POST("/login", handlers.Login)
-	router.POST("/signup", handlers.SignUp)
+	router.POST("/sign-up", handlers.SignUp)
 
 	// Grouping
 	auth := router.Group("/auth")
-	auth.Use(middleware.JWTMiddleware())
+	auth.Use(middleware.RefreshSessionTokenMiddleware(), middleware.CookieMiddleware())
 	{
 		// Used to get User profile information, userful for User Page
 		auth.GET("/profile", handlers.GetProfile)
@@ -34,7 +34,7 @@ func SetupRoutes(router *gin.Engine) {
 
 	// Admin group
 	admin := router.Group("/admin")
-	admin.Use(middleware.AdminMiddleware())
+	admin.Use(middleware.RefreshSessionTokenMiddleware(), middleware.CookieMiddleware(), middleware.AdminMiddleware())
 	{
 		// Get Table Data
 		admin.GET("/get-users", handlers.GetUsers)
