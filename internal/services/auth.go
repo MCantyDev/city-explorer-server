@@ -8,6 +8,7 @@ package services
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -41,9 +42,25 @@ func GenerateCookies(c *gin.Context, id uint, path string) error {
 
 	// Set Cookies
 	// Short Lived Session Token lasting 15 mins (15 * 60)
-	c.SetCookie("session_token", sessionToken, 15*60, path, "", true, true)
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "session_token",
+		Value:    sessionToken,
+		Path:     path,
+		MaxAge:   15 * 60,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
 	// Long Lived Refresh Token lasting 7 days (7 * 24 * 60 * 60)
-	c.SetCookie("refresh_token", refreshToken, 7*24*60*60, path, "", true, true)
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     path,
+		MaxAge:   7 * 24 * 60 * 60,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
 	return nil
 }
 
@@ -52,7 +69,15 @@ func GenerateSessionCookie(c *gin.Context, id uint, path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to generate session token")
 	}
-	c.SetCookie("session_token", sessionToken, 15*60, path, "", true, true)
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "session_token",
+		Value:    sessionToken,
+		Path:     path,
+		MaxAge:   15 * 60,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
 	return nil
 }
 

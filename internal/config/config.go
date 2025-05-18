@@ -114,6 +114,7 @@ func Load() {
 }
 
 // getEnv returns the environment variable or shuts down if missing
+
 func getEnv(key string) string {
 	val := os.Getenv(key)
 	if val == "" {

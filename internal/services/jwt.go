@@ -36,8 +36,7 @@ func GenerateSessionJWT(id uint) (string, error) {
 
 // Validate JWT - Validates if the JWT token is valid or not
 func validateJWT(tokenStr string) (jwt.MapClaims, error) {
-	parser := jwt.Parser{SkipClaimsValidation: true}
-	token, err := parser.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

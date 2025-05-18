@@ -7,57 +7,43 @@ import (
 )
 
 func SetupRoutes(router *gin.Engine) {
-	// Setup the Router Routes
-
 	// User Routes
 	router.POST("/login", handlers.Login)
 	router.POST("/sign-up", handlers.SignUp)
 
 	// Grouping
 	auth := router.Group("/auth")
-	auth.Use(middleware.RefreshSessionTokenMiddleware(), middleware.CookieMiddleware())
+	auth.Use(middleware.SessionAuthMiddleware())
 	{
-		// Used to get User profile information, userful for User Page
 		auth.GET("/profile", handlers.GetProfile)
-
-		auth.GET("/get-country", handlers.GetCountry) // Rest-Countries API
-		auth.GET("/get-cities", handlers.GetCities)   // PhotonAPI
-
-		// City Specific Endpoints
-		auth.GET("/get-city-weather", handlers.GetWeather)           // OpenWeatherMap API
-		auth.GET("/get-city-sights", handlers.GetTravelDestinations) // OpenTripMap API
+		auth.GET("/logout", handlers.Logout)
+		auth.GET("/get-country", handlers.GetCountry)
+		auth.GET("/get-cities", handlers.GetCities)
+		auth.GET("/get-city-weather", handlers.GetWeather)
+		auth.GET("/get-city-sights", handlers.GetTravelDestinations)
 		auth.GET("/get-city-poi", handlers.GetTravelDestination)
-
-		// Check Admin Status (Here as any user can technically check status)
-		auth.GET("/check-admin-status", handlers.CheckAdminStatus)
+		// auth.GET("/check-admin-status", handlers.CheckAdminStatus)
 	}
 
 	// Admin group
 	admin := router.Group("/admin")
-	admin.Use(middleware.RefreshSessionTokenMiddleware(), middleware.CookieMiddleware(), middleware.AdminMiddleware())
+	admin.Use(middleware.SessionAuthMiddleware(), middleware.AdminMiddleware())
 	{
-		// Get Table Data
 		admin.GET("/get-users", handlers.GetUsers)
 		admin.GET("/get-countries", handlers.GetCountries)
 		admin.GET("/get-city-weather", handlers.GetCityWeatherTable)
 		admin.GET("/get-city-sights", handlers.GetCitySightsTable)
 		admin.GET("/get-city-pois", handlers.GetCityPoisTable)
-
-		// Edit Users (Only Selectable Editable Data - The rest just Query the external APIs again)
 		admin.POST("/add-user", handlers.AddUser)
-		admin.POST("/edit-user", handlers.EditUser)
-		admin.POST("/delete-user", handlers.DeleteUser)
-
-		// Refresh (Using GET because...why not)
-		admin.GET("/refresh-country", handlers.RefreshCountry)
-		admin.GET("/refresh-city-weather", handlers.RefreshCityWeather)
-		admin.GET("/refresh-city-sights", handlers.RefreshCitySights)
-		admin.GET("/refresh-city-poi", handlers.RefreshCityPoi)
-
-		// Delete
-		admin.POST("/delete-country", handlers.DeleteCountry)
-		admin.POST("/delete-city-weather", handlers.DeleteCityWeather)
-		admin.POST("/delete-city-sights", handlers.DeleteCitySights)
-		admin.POST("/delete-city-poi", handlers.DeleteCityPoi)
+		admin.PATCH("/edit-user", handlers.EditUser)
+		admin.PATCH("/refresh-country", handlers.RefreshCountry)
+		admin.PATCH("/refresh-city-weather", handlers.RefreshCityWeather)
+		admin.PATCH("/refresh-city-sights", handlers.RefreshCitySights)
+		admin.PATCH("/refresh-city-poi", handlers.RefreshCityPoi)
+		admin.DELETE("/delete-user", handlers.DeleteUser)
+		admin.DELETE("/delete-country", handlers.DeleteCountry)
+		admin.DELETE("/delete-city-weather", handlers.DeleteCityWeather)
+		admin.DELETE("/delete-city-sights", handlers.DeleteCitySights)
+		admin.DELETE("/delete-city-poi", handlers.DeleteCityPoi)
 	}
 }
