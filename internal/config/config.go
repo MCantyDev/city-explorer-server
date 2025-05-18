@@ -1,12 +1,9 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -38,7 +35,6 @@ type DatabaseConfig struct {
 
 type JWTConfig struct {
 	SecretKey []byte
-	Duration  time.Duration
 }
 
 type ExternalAPI struct {
@@ -69,15 +65,6 @@ func Load() {
 		log.Fatal("invalid DB_PORT: Must be within range of 1024 - 65535")
 	}
 
-	// Parse JWT_DURATION_DAYS
-	JWTDuration, err := parseDurationWithDays(getEnv("JWT_DURATION"))
-	if err != nil {
-		log.Fatalf("invalid JWT_DURATION: %v", err)
-	}
-	if JWTDuration < time.Minute*15 || JWTDuration > (time.Hour*744) { // Ensure the Duration does not below 15 minutes or above 31 days
-		log.Fatalf("invalid JWT_DURATION: Must be within range of 15m - 31d")
-	}
-
 	// Build Cfg
 	Cfg.Database.User = getEnv("DB_USER")         // Initialise DB Server Username
 	Cfg.Database.Password = getEnv("DB_PASSWORD") // Initialise DB Server Password
@@ -86,7 +73,6 @@ func Load() {
 	Cfg.Database.Name = getEnv("DB_NAME")         // Initialise DB Name
 
 	Cfg.JWT.SecretKey = []byte(getEnv("JWT_SECRET_KEY")) // Initialise JWT Secret Key for JWT Encoding
-	Cfg.JWT.Duration = JWTDuration                       // Initialise JWT Duration for Validation
 
 	Cfg.PhotonAPI = ExternalAPI{
 		Name: "Photon API",
@@ -121,20 +107,4 @@ func getEnv(key string) string {
 		log.Fatalf("Missing required environment variable: %s", key) // force server shutdown if env variable is missing
 	}
 	return val
-}
-
-// Parse Time with Days (As is the main type of time, however allow use of other suffixes such as 's', 'm', 'h', etc)
-func parseDurationWithDays(duration string) (time.Duration, error) {
-	if strings.HasSuffix(duration, "d") { // Custom check for Days suffix
-		days := strings.TrimSuffix(duration, "d")
-
-		daysInt, err := strconv.Atoi(days)
-		if err != nil {
-			log.Printf("Invalid day duration format: %v", err)
-			return 0, fmt.Errorf("invalid days format: %v", err)
-		}
-
-		return time.ParseDuration(fmt.Sprintf("%dh", daysInt*24)) // Returns a (time.Duration, error)
-	}
-	return time.ParseDuration(duration)
 }
