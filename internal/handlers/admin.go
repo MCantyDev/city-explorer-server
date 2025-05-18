@@ -19,30 +19,29 @@ import (
 // Can Refresh column (call external API before Expiry date)
 // See all data in the Server in the Frontend Admin Dashboard
 
-func CheckAdminStatus(c *gin.Context) {
-	userId, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Could not validate admin status",
-			"isAdmin": false,
-		})
-		return
-	}
+// No Longer used
+// func CheckAdminStatus(c *gin.Context) {
+// 	isAdmin, exists := c.Get("isAdmin")
+// 	if !exists {
+// 		c.JSON(http.StatusInternalServerError, gin.H{
+// 			"error":   "isAdmin not found in context",
+// 			"isAdmin": isAdmin,
+// 		})
+// 		return
+// 	}
+// 	if !isAdmin.(bool) {
+// 		c.JSON(http.StatusUnauthorized, gin.H{
+// 			"error":   "Admin status required",
+// 			"isAdmin": isAdmin,
+// 		})
+// 		return
+// 	}
 
-	isAdmin, _ := services.CheckAdminStatus(userId.(float64))
-	if !isAdmin {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error":   "Unauthorised",
-			"isAdmin": false,
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"error":   nil,
-		"isAdmin": true,
-	})
-}
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"error":   nil,
+// 		"isAdmin": isAdmin,
+// 	})
+// }
 
 func GetUsers(c *gin.Context) {
 	var users []models.User

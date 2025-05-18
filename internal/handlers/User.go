@@ -58,7 +58,7 @@ func SignUp(c *gin.Context) {
 		errMsg, valid := v.validate(v.value)
 		if !valid {
 			userCreationError.Error = errMsg
-			c.JSON(http.StatusBadRequest, userCreationError)
+			c.JSON(http.StatusInternalServerError, userCreationError)
 			return
 		}
 	}
@@ -66,7 +66,7 @@ func SignUp(c *gin.Context) {
 	// Check if Passwords are the same
 	if req.Password != req.ConfirmPassword {
 		userCreationError.Error = "Passwords Don't Match"
-		c.JSON(http.StatusBadRequest, userCreationError)
+		c.JSON(http.StatusInternalServerError, userCreationError)
 		return
 	}
 
@@ -102,18 +102,23 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
-	// Generate a JWT Token
-	token, err := services.GenerateJWT(user)
+	// Generate Cookies
+	path := "/sign-up"
+	err = services.GenerateCookies(c, user.Id, path)
 	if err != nil {
-		userCreationError.Error = "Internal Server Error (Try again later)"
-		c.JSON(http.StatusInternalServerError, userCreationError)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
 
 	// Return a success message -> Need to Change to return a valid JWT Token
-	c.JSON(http.StatusCreated, gin.H{
-		"message": fmt.Sprintf("User (%s) created successfully", user.Username),
-		"token":   token,
+	c.JSON(http.StatusOK, gin.H{
+		"firstName": user.FirstName,
+		"lastName":  user.LastName,
+		"username":  user.Username,
+		"email":     user.Email,
+		"isAdmin":   user.IsAdmin,
 	})
 }
 
@@ -134,6 +139,7 @@ func Login(c *gin.Context) {
 	}
 
 	// Fetch the user from the database based on Username
+
 	var user models.User
 	query := database.NewQueryBuilder("SELECT").Table("users").Where("username = ?").Build()
 	_, err = database.Execute(&user, query, req.Username)
@@ -146,7 +152,7 @@ func Login(c *gin.Context) {
 	// If no user is found
 	if user.Username == "" {
 		userLoginError.Error = fmt.Sprintf("No User found with Username: %s", req.Username)
-		c.JSON(http.StatusBadRequest, userLoginError)
+		c.JSON(http.StatusUnauthorized, userLoginError)
 		return
 	}
 
@@ -154,27 +160,41 @@ func Login(c *gin.Context) {
 	isPassword := services.CompareHashed(user.Password, req.Password)
 	if !isPassword {
 		userLoginError.Error = "Passwords do not match"
-		c.JSON(http.StatusBadRequest, userLoginError)
+		c.JSON(http.StatusUnauthorized, userLoginError)
 		return
 	}
 
-	// Generate a JWT Token
-	token, err := services.GenerateJWT(user)
+	// Generate Cookies
+	path := "/"
+	err = services.GenerateCookies(c, user.Id, path)
 	if err != nil {
-		userLoginError.Error = "Internal Server Error (Try again later)"
-		c.JSON(http.StatusInternalServerError, userLoginError)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
 
-	// Return a success message -> Need to change to return a Valid JWT Token
+	// Return the User's Information
 	c.JSON(http.StatusOK, gin.H{
-		"message": fmt.Sprintf("successfully logged in to City Explorer as %s", req.Username),
-		"token":   token,
+		"firstName": user.FirstName,
+		"lastName":  user.LastName,
+		"username":  user.Username,
+		"email":     user.Email,
+		"isAdmin":   user.IsAdmin,
+	})
+}
+
+func Logout(c *gin.Context) {
+	services.DeleteCookie(c, "session_token")
+	services.DeleteCookie(c, "refresh_token")
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Successfully logged out",
 	})
 }
 
 func GetProfile(c *gin.Context) {
-	userID, exists := c.Get("userID")
+	userID, exists := c.Get("userId")
 	if !exists {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "User ID missing in context",
@@ -182,21 +202,20 @@ func GetProfile(c *gin.Context) {
 	}
 
 	var user models.User
-	query := database.NewQueryBuilder("SELECT").Table("users").Columns("first_name", "last_name", "username", "email").Where("id = ?").Build()
+	query := database.NewQueryBuilder("SELECT").Table("users").Columns("first_name", "last_name", "username", "email", "is_admin").Where("id = ?").Build()
 
 	_, err := database.Execute(&user, query, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "Failed to retreive User data from Server",
 		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"user": gin.H{
-			"firstName": user.FirstName,
-			"lastName":  user.LastName,
-			"username":  user.Username,
-			"email":     user.Email,
-		},
+		"firstName": user.FirstName,
+		"lastName":  user.LastName,
+		"username":  user.Username,
+		"email":     user.Email,
+		"isAdmin":   user.IsAdmin,
 	})
 }

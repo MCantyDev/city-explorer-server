@@ -36,6 +36,7 @@ func connectToServer() (*gorm.DB, error) {
 }
 
 // connectToDatabase - Establishes a connection to the MySQL Database
+
 func connectToDatabase(dbName string) (*gorm.DB, error) {
 	dsnWithDB := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=true&loc=Local",
 		config.Cfg.Database.User,
